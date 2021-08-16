@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: menudeployment
+spec:
+  selector:
+    matchLabels:
+      app: menuservice
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: menuservice
+    spec:
+      containers:
+      - image: us.icr.io/marcnamespace/menuservice:1.0
+        name: menuservice
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9741
+        volumeMounts:
+        - name: menuservicevolume
+          mountPath: "/config"
+        readinessProbe:
+            httpGet:
+                path: /actuator/health
+                port: 9741
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+          
+        livenessProbe:
+            httpGet:
+                path: /actuator/health
+                port: 9741
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+      restartPolicy: Always
+      volumes:
+      - name: menuservicevolume
+        configMap:
+          name: menucm
+          items:
+          - key: application.properties 
+            path: application.properties

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customerdeployment
+spec:
+  selector:
+    matchLabels:
+      app: customerservice
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: customerservice
+    spec:
+      containers:
+      - image: us.icr.io/marcnamespace/customerservice:1.0
+        name: customerservice
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9742
+        volumeMounts:
+        - name: customerservicevolume
+          mountPath: "/config"
+        readinessProbe:
+            httpGet:
+                path: /actuator/health
+                port: 9742
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+          
+        livenessProbe:
+            httpGet:
+                path: /actuator/health
+                port: 9742
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+      restartPolicy: Always
+      volumes:
+      - name: customerservicevolume
+        configMap:
+          name: customercm
+          items:
+          - key: application.properties 
+            path: application.properties

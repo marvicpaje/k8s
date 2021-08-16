@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orderdeployment
+spec:
+  selector:
+    matchLabels:
+      app: orderservice
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: orderservice
+    spec:
+      containers:
+      - image: us.icr.io/marcnamespace/orderservice:1.0
+        name: orderservice
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9743
+        volumeMounts:
+        - name: orderservicevolume
+          mountPath: "/config"
+        readinessProbe:
+            httpGet:
+                path: /actuator/health
+                port: 9743
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+          
+        livenessProbe:
+            httpGet:
+                path: /actuator/health
+                port: 9743
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+        volumeMounts:
+        - name: orderservicevolume
+          mountPath: "/config"
+      restartPolicy: Always
+      volumes:
+      - name: orderservicevolume
+        configMap:
+          name: ordercm
+          items:
+          - key: application.properties 
+            path: application.properties
